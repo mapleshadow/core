@@ -80,6 +80,25 @@ class Test_DBSchema extends \Test\TestCase {
 		$this->assertTableNotExist($this->table1);
 		$this->assertTableNotExist($this->table2);
 	}
+	
+	/**
+	 * 
+	 */
+	public function testSchemaUnchanged() {
+		$dbfile = OC::$SERVERROOT.'/db_structure.xml';
+		$schema_file = 'static://live_db_scheme';
+		
+		//$r = '_'.OC_Util::generate_random_bytes('4').'_';
+		$content = file_get_contents( $dbfile );
+		//$content = str_replace( '*dbprefix*', '*dbprefix*'.$r, $content );
+		file_put_contents( $schema_file, $content );
+
+		\OC_DB::enableCaching(false);
+		\OC_DB::createDbFromStructure($schema_file);
+		\OC_DB::updateDbFromStructure($schema_file);
+		
+		unlink($schema_file);
+	}
 
 	/**
 	 * @param string $table
