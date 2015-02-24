@@ -2,10 +2,21 @@
 /**
  * @author Clark Tomlinson  <clark@owncloud.com>
  * @since 2/19/15, 11:25 AM
- * @copyright 2015 ownCloud, Inc.
+ * @copyright Copyright (c) 2015, ownCloud, Inc.
+ * @license AGPL-3.0
  *
- * This file is licensed under the Affero General Public License version 3 or later.
- * See the COPYING-README file.
+ * This code is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License, version 3,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License, version 3,
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  */
 
 namespace OCA\Encryption\Controller;
@@ -13,27 +24,41 @@ namespace OCA\Encryption\Controller;
 
 use OCA\Encryption\Recovery;
 use OCP\AppFramework\Controller;
+use OCP\IConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\JSON;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class RecoveryController extends Controller {
-	protected $di;
+	/**
+	 * @var IConfig
+	 */
+	private $config;
+	/**
+	 * @var IL10N
+	 */
+	private $l;
+	/**
+	 * @var Recovery
+	 */
+	private $recovery;
 
 	/**
 	 * @param string $AppName
 	 * @param IRequest $request
+	 * @param IConfig $config
+	 * @param IL10N $l10n
+	 * @param Recovery $recovery
 	 */
-	public function __construct($AppName, IRequest $request) {
-		$this->di = \OC::$server;
+	public function __construct($AppName, IRequest $request, IConfig $config, IL10N $l10n, Recovery $recovery) {
 		parent::__construct($AppName, $request);
-		$this->l = $this->di->getL10N($AppName);
+		$this->config = $config;
+		$this->l = $l10n;
+		$this->recovery = $recovery;
 	}
 
 	public function adminRecovery($recoveryPassword, $confirmPassword, $adminEnableRecovery) {
-		$return = false;
-		$errorMessage = $this->l->t('Unknown Error');
-
 		// Check if both passwords are the same
 		if (empty($recoveryPassword)) {
 			$errorMessage = $this->l->t('Missing recovery key password');
@@ -51,15 +76,15 @@ class RecoveryController extends Controller {
 		}
 
 		// Enable recoveryAdmin
-		$recoveryKeyId = $this->di->getConfig()->getAppValue('encryption', 'recoveryKeyId');
+		$recoveryKeyId = $this->config->getAppValue('encryption', 'recoveryKeyId');
 
 		if (isset($adminEnableRecovery) && $adminEnableRecovery === '1') {
-			if ((new Recovery())->enableAdminRecovery($recoveryKeyId, $recoveryPassword)) {
+			if ($this->recovery->enableAdminRecovery($recoveryKeyId, $recoveryPassword)) {
 				return new JsonResponse(['data' => array('message' => $this->l->t('Recovery key successfully enabled'))]);
 			}
 			return new JsonResponse(['data' => array('message' => $this->l->t('Could not enable recovery key. Please check your recovery key password!'))]);
 		} elseif (isset($adminEnableRecovery) && $adminEnableRecovery === '0') {
-			if ((new Recovery())->disableAdminRecovery($recoveryKeyId, $recoveryPassword)) {
+			if ($this->recovery->disableAdminRecovery($recoveryKeyId, $recoveryPassword)) {
 				return new JsonResponse(['data' => array('message' => $this->l->t('Recovery key successfully disabled'))]);
 			}
 			return new JsonResponse(['data' => array('message' => $this->l->t('Could not disable recovery key. Please check your recovery key password!'))]);

@@ -2,16 +2,30 @@
 /**
  * @author Clark Tomlinson  <clark@owncloud.com>
  * @since 2/19/15, 1:42 PM
- * @copyright 2015 ownCloud, Inc.
+ * @copyright Copyright (c) 2015, ownCloud, Inc.
+ * @license AGPL-3.0
  *
- * This file is licensed under the Affero General Public License version 3 or later.
- * See the COPYING-README file.
+ * This code is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License, version 3,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License, version 3,
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  */
 
 namespace OCA\Encryption;
 
 
 use OCA\Encryption\Exception\EncryptionException;
+use OCP\IConfig;
+use OCP\ILogger;
+use OCP\IUser;
 
 class Crypt {
 
@@ -25,9 +39,23 @@ class Crypt {
 
 	const HEADERSTART = 'HBEGIN';
 	const HEADEREND = 'HEND';
+	/**
+	 * @var ILogger
+	 */
+	private $logger;
+	/**
+	 * @var IUser
+	 */
+	private $user;
+	/**
+	 * @var IConfig
+	 */
+	private $config;
 
-	public function __construct() {
-		$this->di = \OC::$server;
+	public function __construct(ILogger $logger, IUser $user, IConfig $config) {
+		$this->logger = $logger;
+		$this->user = $user;
+		$this->config = $config;
 	}
 
 	public function mode($user = null) {
@@ -39,11 +67,11 @@ class Crypt {
 	 */
 	public function createKeyPair() {
 
-		$log = $this->di->getLogger();
+		$log = $this->logger;
 		$res = $this->getOpenSSLPKey();
 
 		if (!$res) {
-			$user = $this->di->getUserSession()->getUser();
+			$user = $this->user->getUser();
 			$log->error("Encryption Library could'nt generate users key-pair for {$user->getUID()}", ['app' => 'encryption']);
 
 			if (openssl_error_string()) {
@@ -86,7 +114,7 @@ class Crypt {
 	public function symmetricEncryptFileContent($plainContent, $passphrase) {
 
 		if (!$plainContent) {
-			$this->di->getLogger()->error('Encryption Library, symmetrical encryption failed no content given', ['app' => 'encryption']);
+			$this->logger->error('Encryption Library, symmetrical encryption failed no content given', ['app' => 'encryption']);
 			return false;
 		}
 
@@ -101,7 +129,7 @@ class Crypt {
 			return $padded;
 		} catch (EncryptionException $e) {
 			$message = 'Could not encrypt file content (code: ' . $e->getCode() . '): ';
-			$this->di->getLogger()->error('files_encryption' . $message . $e->getMessage(), ['app' => 'encryption']);
+			$this->logger->error('files_encryption' . $message . $e->getMessage(), ['app' => 'encryption']);
 			return false;
 		}
 
@@ -112,7 +140,7 @@ class Crypt {
 
 		if (!$encryptedContent) {
 			$error = 'Encryption (symmetric) of content failed';
-			$this->di->getLogger()->error($error . openssl_error_string(), ['app' => 'encryption']);
+			$this->logger->error($error . openssl_error_string(), ['app' => 'encryption']);
 			throw new EncryptionException($error, EncryptionException::ENCRYPTION_FAILED);
 		}
 
@@ -120,11 +148,9 @@ class Crypt {
 	}
 
 	public function getCipher() {
-		$cipher = $this->di->getConfig()->getSystemValue('cipher', self::DEFAULT_CIPHER);
+		$cipher = $this->config->getSystemValue('cipher', self::DEFAULT_CIPHER);
 		if ($cipher !== 'AES-256-CFB' || $cipher !== 'AES-128-CFB') {
-			$this->di
-				->getLogger()
-				->warning('Wrong cipher defined in config.php only AES-128-CFB and AES-256-CFB are supported. Fall back' . self::DEFAULT_CIPHER, ['app' => 'encryption']);
+			$this->logger->warning('Wrong cipher defined in config.php only AES-128-CFB and AES-256-CFB are supported. Fall back' . self::DEFAULT_CIPHER, ['app' => 'encryption']);
 			$cipher = self::DEFAULT_CIPHER;
 		}
 
@@ -233,6 +259,24 @@ class Crypt {
 		}
 
 		return $result;
+	}
+
+	private function generateIv() {
+		$random = openssl_random_pseudo_bytes(12, $strong);
+		if ($random) {
+			if (!$strong) {
+				// If OpenSSL indicates randomness is insecure log error
+				$this->logger->error('Encryption Library: Insecure symmetric key was generated using openssl_random_psudo_bytes()', ['app' => 'encryption']);
+			}
+
+			/*
+			 * We encode the iv purely for string manipulation
+			 * purposes -it gets decoded before use
+			 */
+			return base64_encode($random);
+		}
+		// If we ever get here we've failed anyway no need for an else
+		throw new EncryptionException('Generating IV Failed');
 	}
 }
 
