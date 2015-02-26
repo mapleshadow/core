@@ -77,7 +77,6 @@ class Manager implements \OCP\Encryption\IManager {
 	 * Unregisters an encryption module
 	 *
 	 * @param IEncryptionModule $module
-	 * @return void
 	 */
 	public function unregisterEncryptionModule(IEncryptionModule $module) {
 		unset($this->encryptionModules[$module->getId()]);

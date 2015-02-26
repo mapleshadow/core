@@ -50,7 +50,7 @@ interface IManager {
 	function registerEncryptionModule(IEncryptionModule $module);
 
 	/**
-	 * Unregisters an address book
+	 * Unregisters an encryption module
 	 *
 	 * @param IEncryptionModule $module
 	 */
