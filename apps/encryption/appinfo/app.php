@@ -40,14 +40,13 @@ $config = $ioc->getConfig();
 // Lets register this encryption module
 $encryptionModule = $ioc->getEncryptionManager()->registerEncryptionModule(new Encryption());
 
-$ioc->registerService('Crypt', function () {
-	return new Crypt();
+$ioc->registerService('Crypt', function (OC\Server $c) {
+	return new Crypt($c->getLogger(), $c->getUserSession()->getUser(), $c->getConfig());
 });
 
 $ioc->registerService('KeyManager', function (OC\Server $c) {
-	return new KeyManager(new View('/'));
+	return new KeyManager(new View('/'), $c->query('Crypt'));
 });
-
 
 
 $ioc->registerService('Recovery', function (OC\Server $c) {
@@ -61,8 +60,6 @@ $ioc->registerService('Recovery', function (OC\Server $c) {
 });
 
 if ($config->getSystemValue('maintenance', false)) {
-	OC_FileProxy::register(new OCA\Encryption\Proxy());
-
 
 	// Register our hooks and fire them.
 	$hookManager = new HookManager();
@@ -76,9 +73,6 @@ if ($config->getSystemValue('maintenance', false)) {
 
 	$hookManager->fireHooks();
 
-	if (!in_array('crypt', stream_get_wrappers())) {
-		stream_wrapper_register('crypt', 'OCA\Encryption\Stream');
-	}
 } else {
 	// Logout user if we are in maintenance to force re-login
 	$ioc->getUserSession()->logout();
