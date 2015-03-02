@@ -22,7 +22,9 @@
 namespace OCA\Encryption;
 
 
-use OCA\Encryption\Exception\EncryptionException;
+use OCA\Encryption\Exception\DecryptionFailedException;
+use OCA\Encryption\Exception\EncryptionFailedException;
+use OCA\Encryption\Exception\GenericEncryptionException;
 use OCP\IConfig;
 use OCP\ILogger;
 use OCP\IUser;
@@ -127,7 +129,7 @@ class Crypt {
 			$padded = $this->addPadding($catFile);
 
 			return $padded;
-		} catch (EncryptionException $e) {
+		} catch (EncryptionFailedException $e) {
 			$message = 'Could not encrypt file content (code: ' . $e->getCode() . '): ';
 			$this->logger->error('files_encryption' . $message . $e->getMessage(), ['app' => 'encryption']);
 			return false;
@@ -141,7 +143,7 @@ class Crypt {
 		if (!$encryptedContent) {
 			$error = 'Encryption (symmetric) of content failed';
 			$this->logger->error($error . openssl_error_string(), ['app' => 'encryption']);
-			throw new EncryptionException($error, EncryptionException::ENCRYPTION_FAILED);
+			throw new EncryptionFailedException($error);
 		}
 
 		return $encryptedContent;
@@ -236,7 +238,7 @@ class Crypt {
 		if ($plainContent) {
 			return $plainContent;
 		} else {
-			throw new EncryptionException('Encryption library: Decryption (symmetric) of content failed');
+			throw new DecryptionFailedException('Encryption library: Decryption (symmetric) of content failed');
 		}
 	}
 
@@ -276,7 +278,7 @@ class Crypt {
 			return base64_encode($random);
 		}
 		// If we ever get here we've failed anyway no need for an else
-		throw new EncryptionException('Generating IV Failed');
+		throw new GenericEncryptionException('Generating IV Failed');
 	}
 }
 
