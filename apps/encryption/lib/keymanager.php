@@ -23,10 +23,8 @@ namespace OCA\Encryption;
 
 
 use OC\Files\View;
-use OCP\Encryption\IKeyStorage;
 
-class KeyManager implements IKeyStorage {
-
+class KeyManager {
 
 	/**
 	 * @var View
@@ -44,15 +42,20 @@ class KeyManager implements IKeyStorage {
 	/**
 	 * @var string
 	 */
-	private $publicKeyDir = '/encryption/public_keys';
+	private $publicKeyDir = 'publicKeys/';
 	/**
-	 * @var array
+	 * @var string
 	 */
-	private $keyCache = [];
+	private $privateKeyDir = 'privateKeys/';
+	/**
+	 * @var Crypt
+	 */
+	private $crypt;
 
-	public function __construct(View $view) {
+	public function __construct(View $view, Crypt $crypt) {
 
 		$this->view = $view;
+		$this->crypt = $crypt;
 	}
 
 	/**
@@ -70,109 +73,21 @@ class KeyManager implements IKeyStorage {
 		return false;
 	}
 
-	/**
-	 * get user specific key
-	 *
-	 * @param string $uid ID if the user for whom we want the key
-	 * @param string $keyid id of the key
-	 *
-	 * @return mixed key
-	 */
-	public function getUserKey($uid, $keyid) {
-		// TODO: Implement getUserKey() method.
+	public function getPrivateKey($keyId) {
+		$this->view->file_exists($this->keysBaseDir . $this->privateKeyDir . $keyId);
 	}
 
-	/**
-	 * get file specific key
-	 *
-	 * @param string $path path to file
-	 * @param string $keyid id of the key
-	 *
-	 * @return mixed key
-	 */
-	public function getFileKey($path, $keyid) {
-		// TODO: Implement getFileKey() method.
-	}
-
-	/**
-	 * get system-wide user specific key, e.g something like a key for public
-	 * link shares
-	 *
-	 * @param string $uid ID if the user for whom we want the key
-	 * @param string $keyid id of the key
-	 *
-	 * @return mixed key
-	 */
-	public function getSystemUserKey($uid, $keyid) {
-		// TODO: Implement getSystemUserKey() method.
-	}
-
-	/**
-	 * get system-wide file keys, e.g. from a external storage mounted
-	 * by the admin for multiple users
-	 *
-	 * @param string $path path to file
-	 * @param string $keyid id of the key
-	 *
-	 * @return mixed key
-	 */
-	public function getSystemFileKey($path, $keyid) {
-		// TODO: Implement getSystemFileKey() method.
-	}
-
-	/**
-	 * set user specific key
-	 *
-	 * @param string $uid ID if the user for whom we want the key
-	 * @param string $keyid id of the key
-	 * @param mixed $key
-	 */
-	public function setUserKey($uid, $keyid, $key) {
-		// TODO: Implement setUserKey() method.
-	}
-
-	/**
-	 * set file specific key
-	 *
-	 * @param string $path path to file
-	 * @param string $keyid id of the key
-	 * @param mixed $key
-	 */
-	public function setFileKey($path, $keyid) {
-		// TODO: Implement setFileKey() method.
-	}
-
-	/**
-	 * set system-wide user specific key, e.g something like a key for public
-	 * link shares
-	 *
-	 * @param string $uid ID if the user for whom we want the key
-	 * @param string $keyid id of the key
-	 * @param mixed $key
-	 *
-	 * @return mixed key
-	 */
-	public function setSystemUserKey($uid, $keyid, $key) {
-		// TODO: Implement setSystemUserKey() method.
-	}
-
-	/**
-	 * set system-wide file keys, e.g. from a external storage mounted
-	 * by the admin for multiple users
-	 *
-	 * @param string $path path to file
-	 * @param string $keyid id of the key
-	 * @param mixed $key
-	 */
-	public function setSystemFileKey($path, $keyid) {
-		// TODO: Implement setSystemFileKey() method.
+	public function getPublicKey($keyId) {
+		if ($this->view->file_exists($this->keysBaseDir . $this->publicKeyDir . $keyId)) {
+			return \OC::$server->getEncryptionKeyStorage();
+		}
 	}
 
 	public function checkRecoveryPassword($user, $keyID, $password) {
 		$keyStore = \OC::$server->getEncryptionKeyStorage();
 
 		$recoveryKey = $keyStore->getSystemUserKey($user, $keyID);
-		$decryptedRecoveryKey = (new Crypt())->decryptPrivateKey($recoveryKey, $password);
+		$decryptedRecoveryKey = $this->crypt->decryptPrivateKey($recoveryKey, $password);
 
 		if ($decryptedRecoveryKey) {
 			return true;

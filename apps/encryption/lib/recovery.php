@@ -133,4 +133,12 @@ class Recovery {
 		return false;
 	}
 
+	public function addRecoveryKeys($keyId) {
+		// No idea new way to do this....
+	}
+
+	public function removeRecoveryKeys() {
+		// No idea new way to do this....
+	}
+
 }
