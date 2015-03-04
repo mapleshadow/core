@@ -22,6 +22,11 @@
  */
 
 namespace OCP\Encryption;
+//
+// TODO: move exceptions to OCP
+//
+use OC\Encryption\Exceptions\ModuleDoesNotExistsException;
+use OC\Encryption\Exceptions\ModuleAlreadyExistsException;
 
 /**
  * This class provides access to files encryption apps.
@@ -39,17 +44,17 @@ interface IManager {
 	/**
 	 * Registers an encryption module
 	 *
-	 * @param \OCP\Encryption\IEncryptionModule $module
-	 * @throws Exceptions\ModuleAlreadyExistsException
+	 * @param IEncryptionModule $module
+	 * @throws ModuleAlreadyExistsException
 	 */
-	function registerEncryptionModule(\OCP\Encryption\IEncryptionModule $module);
+	function registerEncryptionModule(IEncryptionModule $module);
 
 	/**
 	 * Unregisters an address book
 	 *
-	 * @param \OCP\Encryption\IEncryptionModule $module
+	 * @param IEncryptionModule $module
 	 */
-	function unregisterEncryptionModule(\OCP\Encryption\IEncryptionModule $module);
+	function unregisterEncryptionModule(IEncryptionModule $module);
 
 	/**
 	 * get a list of all encryption modules
@@ -62,9 +67,9 @@ interface IManager {
 	/**
 	 * get a specific encryption module
 	 *
-	 * @param \OCP\Encryption\IEncryptionModule $module
-	 * @return \OCP\Encryption\IEncryptionModule
-	 * @throws Exceptions\ModuleDoesNotExistsException
+	 * @param IEncryptionModule $module
+	 * @return IEncryptionModule
+	 * @throws ModuleDoesNotExistsException
 	 */
-	function getEncryptionModule(\OCP\Encryption\IEncryptionModule $module = null);
+	function getEncryptionModule(IEncryptionModule $module = null);
 }

@@ -38,8 +38,8 @@ interface IEncryptionModule {
 	public function getDisplayName();
 
 	/**
-	 * start receiving chungs from a file. This is the place where you can
-	 * perfom some initial step before starting encrypting/decrypting the
+	 * start receiving chunks from a file. This is the place where you can
+	 * perform some initial step before starting encrypting/decrypting the
 	 * chunks
 	 *
 	 * @param string $path to the file
