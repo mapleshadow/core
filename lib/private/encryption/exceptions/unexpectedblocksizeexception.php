@@ -1,7 +1,7 @@
 <?php
   /**
  * @author Clark Tomlinson  <clark@owncloud.com>
- * @since 2/25/15, 9:39 AM
+ * @since 2/25/15, 9:35 AM
  * @copyright Copyright (c) 2015, ownCloud, Inc.
  * @license AGPL-3.0
  *
@@ -20,9 +20,9 @@
  */
 
 
-namespace OCA\Encryption\Exception;
+namespace OC\Encryption\Exceptions;
 
 
-class PrivateKeyMissingException extends GenericEncryptionException{
+interface UnexpectedBlockSize {
 
 }

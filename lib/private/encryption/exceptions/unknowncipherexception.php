@@ -20,7 +20,7 @@
  */
 
 
-namespace OCA\Encryption\Exception;
+namespace OC\Encryption\Exceptions;
 
 
 class UnknownCipherException extends GenericEncryptionException{

@@ -1,7 +1,7 @@
 <?php
   /**
  * @author Clark Tomlinson  <clark@owncloud.com>
- * @since 2/25/15, 9:35 AM
+ * @since 2/25/15, 9:30 AM
  * @copyright Copyright (c) 2015, ownCloud, Inc.
  * @license AGPL-3.0
  *
@@ -19,10 +19,9 @@
  *
  */
 
+namespace OC\Encryption\Exceptions;
 
-namespace OCA\Encryption\Exception;
 
-
-interface UnexpectedBlockSize {
+class GenericEncryptionException extends \Exception {
 
 }

@@ -1,7 +1,7 @@
 <?php
   /**
  * @author Clark Tomlinson  <clark@owncloud.com>
- * @since 2/25/15, 9:30 AM
+ * @since 2/25/15, 9:34 AM
  * @copyright Copyright (c) 2015, ownCloud, Inc.
  * @license AGPL-3.0
  *
@@ -19,9 +19,10 @@
  *
  */
 
-namespace OCA\Encryption\Exception;
+
+namespace OC\Encryption\Exceptions;
 
 
-class GenericEncryptionException extends \Exception {
+class UnexpectedEndOfEncryptionHeaderException extends GenericEncryptionException {
 
 }
