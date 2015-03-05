@@ -45,7 +45,7 @@ $ioc->registerService('Crypt', function (OC\Server $c) {
 });
 
 $ioc->registerService('KeyManager', function (OC\Server $c) {
-	return new KeyManager(new View('/'), $c->query('Crypt'));
+	return new KeyManager($c->getEncryptionKeyStorage(), $c->query('Crypt'), $c->getConfig(), $c->getUserSession());
 });
 
 

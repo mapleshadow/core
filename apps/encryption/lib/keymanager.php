@@ -22,77 +22,126 @@
 namespace OCA\Encryption;
 
 
-use OC\Files\View;
+use OC\Encryption\Exceptions\PrivateKeyMissingException;
+use OC\Encryption\Exceptions\PublicKeyMissingException;
+use OCP\Encryption\IKeyStorage;
+use OCP\IConfig;
+use OCP\IUser;
+use OCP\IUserSession;
 
 class KeyManager {
 
 	/**
-	 * @var View
+	 * @var IKeyStorage
 	 */
-	private $view;
+	private $keyStorage;
 
-	/**
-	 * @var string
-	 */
-	private $keysBaseDir = '/encryption/keys/';
-	/**
-	 * @var string
-	 */
-	private $encryptionBaseDir = '/encryption';
-	/**
-	 * @var string
-	 */
-	private $publicKeyDir = 'publicKeys/';
-	/**
-	 * @var string
-	 */
-	private $privateKeyDir = 'privateKeys/';
 	/**
 	 * @var Crypt
 	 */
 	private $crypt;
+	/**
+	 * @var string
+	 */
+	private $recoveryKeyId;
+	/**
+	 * @var string
+	 */
+	private $publicShareKeyId;
+	/**
+	 * @var string UserID
+	 */
+	private $keyId;
 
-	public function __construct(View $view, Crypt $crypt) {
+	/**
+	 * @var string
+	 */
+	private $publicKeyId = '.public';
+	/**
+	 * @var string
+	 */
+	private $privateKeyId = '.private';
 
-		$this->view = $view;
+	/**
+	 * @param IKeyStorage $keyStorage
+	 * @param Crypt $crypt
+	 * @param IConfig $config
+	 * @param IUser $userID
+	 */
+	public function __construct(IKeyStorage $keyStorage, Crypt $crypt, IConfig $config, IUser $userID) {
+
+		$this->keyStorage = $keyStorage;
 		$this->crypt = $crypt;
+		$this->recoveryKeyId = $config->getAppValue('encryption', 'recoveryKeyId');
+		$this->publicShareKeyId = $config->getAppValue('encryption', 'publicShareKeyId');
+		$this->keyId = $userID->getUID();
 	}
 
 	/**
-	 * Check if a recovery key exists
-	 *
-	 * @param $recoveryKeyId
+	 * @param $userId
+	 * @return mixed
+	 * @throws PrivateKeyMissingException
+	 */
+	public function getPrivateKey($userId) {
+		$privateKey = $this->keyStorage->getUserKey($userId, $this->privateKeyId);
+
+		if (strlen($privateKey) !== 0) {
+			return $privateKey;
+		}
+		throw new PrivateKeyMissingException();
+	}
+
+	/**
+	 * @param $userId
+	 * @return mixed
+	 * @throws PublicKeyMissingException
+	 */
+	public function getPublicKey($userId) {
+		$publicKey = $this->keyStorage->getUserKey($userId, $this->publicKeyId);
+
+		if (strlen($publicKey) !== 0) {
+			return $publicKey;
+		}
+		throw new PublicKeyMissingException();
+	}
+
+	/**
 	 * @return bool
 	 */
-	public function recoveryKeyExists($recoveryKeyId) {
-		if ($recoveryKeyId) {
-			$result = ($this->view->file_exists($this->publicKeyDir . '/' . $recoveryKeyId . ".publicKey")
-				&& $this->view->file_exists($this->encryptionBaseDir . '/' . $recoveryKeyId . ".privateKey"));
-			return $result;
-		}
-		return false;
+	public function recoveryKeyExists() {
+		return (strlen($this->keyStorage->getSystemUserKey($this->recoveryKeyId)) !== 0);
 	}
 
-	public function getPrivateKey($keyId) {
-		$this->view->file_exists($this->keysBaseDir . $this->privateKeyDir . $keyId);
-	}
-
-	public function getPublicKey($keyId) {
-		if ($this->view->file_exists($this->keysBaseDir . $this->publicKeyDir . $keyId)) {
-			return \OC::$server->getEncryptionKeyStorage();
-		}
-	}
-
-	public function checkRecoveryPassword($user, $keyID, $password) {
-		$keyStore = \OC::$server->getEncryptionKeyStorage();
-
-		$recoveryKey = $keyStore->getSystemUserKey($user, $keyID);
+	/**
+	 * @param $password
+	 * @return bool
+	 */
+	public function checkRecoveryPassword($password) {
+		$recoveryKey = $this->keyStorage->getSystemUserKey($this->recoveryKeyId);
 		$decryptedRecoveryKey = $this->crypt->decryptPrivateKey($recoveryKey, $password);
 
 		if ($decryptedRecoveryKey) {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * @param $userId
+	 * @param $key
+	 * @return bool
+	 */
+	public function setPublicKey($userId, $key) {
+		return $this->keyStorage->setUserKey($userId, $this->publicKeyId, $key);
+	}
+
+	/**
+	 * @param $userId
+	 * @param $key
+	 * @return bool
+	 */
+	public function setPrivateKey($userId, $key) {
+		return $this->keyStorage->setUserKey($userId, $this->privateKeyId, $key);
 	}
 
 }

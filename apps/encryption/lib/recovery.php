@@ -95,11 +95,12 @@ class Recovery {
 
 		$keyStorage = $this->keyStorage;
 
-		if (!$keyManager->recoveryKeyExists($recoveryKeyId)) {
+		if (!$keyManager->recoveryKeyExists()) {
 			$keyPair = $this->crypt->createKeyPair();
 
 			// Save Public Key
-			$keyStorage->setUserKey($this->user->getUID(), $recoveryKeyId, $keyPair['publicKey']);
+			$keyManager->setPublicKey($this->user->getUID(), $keyPair['publicKey']);
+			$keyStorage->setUserKey($this->user->getUID(), '.public', $keyPair['publicKey']);
 
 			$encryptedKey = $this->crypt->symmetricEncryptFileContent($keyPair['privateKey'], $password);
 			if ($encryptedKey) {
@@ -109,7 +110,7 @@ class Recovery {
 			}
 		}
 
-		if ($keyManager->checkRecoveryPassword($this->user->getUID(), $recoveryKeyId, $password)) {
+		if ($keyManager->checkRecoveryPassword($password)) {
 			$appConfig->setAppValue('encryption', 'recoveryAdminEnabled', 1);
 			return true;
 		}
@@ -118,14 +119,13 @@ class Recovery {
 	}
 
 	/**
-	 * @param $recoveryKeyId
 	 * @param $recoveryPassword
 	 * @return bool
 	 */
-	public function disableAdminRecovery($recoveryKeyId, $recoveryPassword) {
+	public function disableAdminRecovery($recoveryPassword) {
 		$keyManager = $this->keyManager;
 
-		if ($keyManager->checkRecoveryPassword($this->user->getUID(), $recoveryKeyId, $recoveryPassword)) {
+		if ($keyManager->checkRecoveryPassword($recoveryPassword)) {
 			// Set recoveryAdmin as disabled
 			$this->config->setAppValue('encryption', 'recoveryAdminEnabled', 0);
 			return true;
