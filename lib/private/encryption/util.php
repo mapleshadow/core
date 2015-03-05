@@ -23,6 +23,9 @@
 
 namespace OC\Encryption;
 
+use OCA\Files_Encryption\Exception\EncryptionException;
+use OCP\Encryption\IEncryptionModule;
+
 class Util {
 
 	const HEADER_ENCRYPTION_MODULE = 1;
@@ -30,26 +33,29 @@ class Util {
 	const HEADER_END = 'HEND';
 	const HEADER_PADDING_CHAR = '-';
 
-	/** @var integer */
-	protected $headerSize;
+	const HEADER_ENCRYPTION_MODULE_KEY = 'oc_encryption_module';
 
-	/** @var integer */
-	protected $blockSize;
+	/**
+	 * block size will always be 8192 for a PHP stream
+	 * @see https://bugs.php.net/bug.php?id=21641
+	 * @var integer
+	 */
+	protected $headerSize = 8192;
 
+	/**
+	 * block size will always be 8192 for a PHP stream
+	 * @see https://bugs.php.net/bug.php?id=21641
+	 * @var integer
+	 */
+	protected $blockSize = 8192;
 
 	/** $var array */
 	protected $ocHeaderKeys;
 
 	public function __construct() {
-		// block size will always be 8192 for a PHP stream https://bugs.php.net/bug.php?id=21641
-		$this->blockSize = 8192;
-		// the encryption header is exactly the same size as one block read
-		// by a php stream
-		$this->headerSize = $this->blockSize;
-
-		$this->ocHeaderKeys = array(
-			self::HEADER_ENCRYPTION_MODULE => 'oc_encryption_module'
-		);
+		$this->ocHeaderKeys = [
+			self::HEADER_ENCRYPTION_MODULE => self::HEADER_ENCRYPTION_MODULE_KEY
+		];
 	}
 
 	/**
@@ -59,14 +65,13 @@ class Util {
 	 * @return string|null
 	 */
 	public function getEncryptionModuleId(array $header) {
-		$id = null;
-		$encryptionModuleKey = $this->ocHeaderKeys[self::HEADER_ENCRYPTION_MODULE];
+		$encryptionModuleKey = self::HEADER_ENCRYPTION_MODULE_KEY;
 
 		if (isset($header[$encryptionModuleKey])) {
-			$id = $header[$encryptionModuleKey];
+			return $header[$encryptionModuleKey];
 		}
 
-		return $id;
+		return null;
 	}
 
 	/**
@@ -102,11 +107,11 @@ class Util {
 	 * create header for encrypted file
 	 *
 	 * @param array $headerData
-	 * @param \OCP\Encryption\IEncryptionModule $encryptionModule
+	 * @param IEncryptionModule $encryptionModule
 	 * @return string
 	 * @throws EncryptionException
 	 */
-	public function createHeader(array $headerData, \OCP\Encryption\IEncryptionModule $encryptionModule) {
+	public function createHeader(array $headerData, IEncryptionModule $encryptionModule) {
 		$header = self::HEADER_START . ':' . self::HEADER_ENCRYPTION_MODULE . ':' . $encryptionModule->getId() . ':';
 		foreach ($headerData as $key => $value) {
 			if (in_array($key, $this->ocHeaderKeys)) {
@@ -128,7 +133,7 @@ class Util {
 	/**
 	 * Find, sanitise and format users sharing a file
 	 * @note This wraps other methods into a portable bundle
-	 * @param string $path path relativ to current users files folder
+	 * @param string $path path relative to current users files folder
 	 * @return array
 	 */
 	public function getSharingUsersArray($path) {
