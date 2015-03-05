@@ -22,9 +22,9 @@
 namespace OCA\Encryption;
 
 
-use OCA\Encryption\Exception\DecryptionFailedException;
-use OCA\Encryption\Exception\EncryptionFailedException;
-use OCA\Encryption\Exception\GenericEncryptionException;
+use OC\Encryption\Exceptions\DecryptionFailedException;
+use OC\Encryption\Exceptions\EncryptionFailedException;
+use OC\Encryption\Exceptions\GenericEncryptionException;
 use OCP\IConfig;
 use OCP\ILogger;
 use OCP\IUser;
@@ -54,12 +54,21 @@ class Crypt {
 	 */
 	private $config;
 
+	/**
+	 * @param ILogger $logger
+	 * @param IUser $user
+	 * @param IConfig $config
+	 */
 	public function __construct(ILogger $logger, IUser $user, IConfig $config) {
 		$this->logger = $logger;
 		$this->user = $user;
 		$this->config = $config;
 	}
 
+	/**
+	 * @param null $user
+	 * @return string
+	 */
 	public function mode($user = null) {
 		return 'server';
 	}
@@ -113,6 +122,12 @@ class Crypt {
 		return $config;
 	}
 
+	/**
+	 * @param $plainContent
+	 * @param $passphrase
+	 * @return bool|string
+	 * @throws GenericEncryptionException
+	 */
 	public function symmetricEncryptFileContent($plainContent, $passphrase) {
 
 		if (!$plainContent) {
@@ -137,6 +152,14 @@ class Crypt {
 
 	}
 
+	/**
+	 * @param $plainContent
+	 * @param $iv
+	 * @param string $passphrase
+	 * @param string $cipher
+	 * @return string
+	 * @throws EncryptionFailedException
+	 */
 	private function encrypt($plainContent, $iv, $passphrase = '', $cipher = self::DEFAULT_CIPHER) {
 		$encryptedContent = openssl_encrypt($plainContent, $cipher, $passphrase, false, $iv);
 
@@ -149,6 +172,9 @@ class Crypt {
 		return $encryptedContent;
 	}
 
+	/**
+	 * @return mixed|string
+	 */
 	public function getCipher() {
 		$cipher = $this->config->getSystemValue('cipher', self::DEFAULT_CIPHER);
 		if ($cipher !== 'AES-256-CFB' || $cipher !== 'AES-128-CFB') {
@@ -159,14 +185,28 @@ class Crypt {
 		return $cipher;
 	}
 
+	/**
+	 * @param $encryptedContent
+	 * @param $iv
+	 * @return string
+	 */
 	private function concatIV($encryptedContent, $iv) {
 		return $encryptedContent . '00iv00' . $iv;
 	}
 
+	/**
+	 * @param $data
+	 * @return string
+	 */
 	private function addPadding($data) {
 		return $data . 'xx';
 	}
 
+	/**
+	 * @param $recoveryKey
+	 * @param $password
+	 * @return bool|string
+	 */
 	public function decryptPrivateKey($recoveryKey, $password) {
 
 		$header = $this->parseHeader($recoveryKey);
@@ -193,6 +233,13 @@ class Crypt {
 		return $plainKey;
 	}
 
+	/**
+	 * @param $keyFileContents
+	 * @param string $passphrase
+	 * @param string $cipher
+	 * @return bool|string
+	 * @throws DecryptionFailedException
+	 */
 	public function symmetricDecryptFileContent($keyFileContents, $passphrase = '', $cipher = self::DEFAULT_CIPHER) {
 		// Remove Padding
 		$noPadding = $this->removePadding($keyFileContents);
@@ -208,6 +255,10 @@ class Crypt {
 		return false;
 	}
 
+	/**
+	 * @param $padded
+	 * @return bool|string
+	 */
 	private function removePadding($padded) {
 		if (substr($padded, -2) === 'xx') {
 			return substr($padded, 0, -2);
@@ -215,6 +266,10 @@ class Crypt {
 		return false;
 	}
 
+	/**
+	 * @param $catFile
+	 * @return array
+	 */
 	private function splitIv($catFile) {
 		// Fetch encryption metadata from end of file
 		$meta = substr($catFile, -22);
@@ -232,6 +287,14 @@ class Crypt {
 		];
 	}
 
+	/**
+	 * @param $encryptedContent
+	 * @param $iv
+	 * @param string $passphrase
+	 * @param string $cipher
+	 * @return string
+	 * @throws DecryptionFailedException
+	 */
 	private function decrypt($encryptedContent, $iv, $passphrase = '', $cipher = self::DEFAULT_CIPHER) {
 		$plainContent = openssl_decrypt($encryptedContent, $cipher, $passphrase, false, $iv);
 
@@ -242,6 +305,10 @@ class Crypt {
 		}
 	}
 
+	/**
+	 * @param $data
+	 * @return array
+	 */
 	private function parseHeader($data) {
 		$result = [];
 
@@ -263,6 +330,10 @@ class Crypt {
 		return $result;
 	}
 
+	/**
+	 * @return string
+	 * @throws GenericEncryptionException
+	 */
 	private function generateIv() {
 		$random = openssl_random_pseudo_bytes(12, $strong);
 		if ($random) {
