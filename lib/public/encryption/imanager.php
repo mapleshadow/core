@@ -67,9 +67,9 @@ interface IManager {
 	/**
 	 * get a specific encryption module
 	 *
-	 * @param IEncryptionModule $module
+	 * @param string $moduleId
 	 * @return IEncryptionModule
 	 * @throws ModuleDoesNotExistsException
 	 */
-	function getEncryptionModule(IEncryptionModule $module = null);
+	function getEncryptionModule($moduleId);
 }

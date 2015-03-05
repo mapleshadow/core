@@ -23,6 +23,8 @@
 
 namespace OC\Encryption;
 
+use OCP\Encryption\IEncryptionModule;
+
 class Manager implements \OCP\Encryption\IManager {
 
 	/** @var array */
@@ -56,10 +58,10 @@ class Manager implements \OCP\Encryption\IManager {
 	/**
 	 * Registers an encryption module
 	 *
-	 * @param \OCP\Encryption\IEncryptionModule $module
+	 * @param IEncryptionModule $module
 	 * @throws Exceptions\ModuleAlreadyExistsException
 	 */
-	public function registerEncryptionModule(\OCP\Encryption\IEncryptionModule $module) {
+	public function registerEncryptionModule(IEncryptionModule $module) {
 
 		if (!empty($this->encryptionModules)) {
 			$message = 'At the moment it is not allowed to register more than one encryption module';
@@ -68,27 +70,23 @@ class Manager implements \OCP\Encryption\IManager {
 
 		$id = $module->getId();
 		$name = $module->getDisplayName();
-		if (isset($this->encryptionModules[$id])) {
-			$message = 'Id "' . $id . '" already used by encryption module "' . $name . '"';
-			throw new Exceptions\ModuleAlreadyExistsException($message);
-		}
 		$this->encryptionModules[$id] = $module;
 	}
 
 	/**
 	 * Unregisters an encryption module
 	 *
-	 * @param \OCP\Encryption\IEncryptionModule $module
+	 * @param IEncryptionModule $module
 	 * @return void
 	 */
-	public function unregisterEncryptionModule(\OCP\Encryption\IEncryptionModule $module) {
+	public function unregisterEncryptionModule(IEncryptionModule $module) {
 		unset($this->encryptionModules[$module->getId()]);
 	}
 
 	/**
 	 * get a list of all encryption modules
 	 *
-	 * @return array
+	 * @return IEncryptionModule[]
 	 */
 	public function getEncryptionModules() {
 		return $this->encryptionModules;
@@ -97,31 +95,16 @@ class Manager implements \OCP\Encryption\IManager {
 	/**
 	 * get a specific encryption module
 	 *
-	 * @param \OCP\Encryption\IEncryptionModule $module
-	 * @return \OCP\Encryption\IEncryptionModule
+	 * @param string $moduleId
+	 * @return IEncryptionModule
 	 * @throws Exceptions\ModuleDoesNotExistsException
 	 */
-	public function getEncryptionModule(\OCP\Encryption\IEncryptionModule $module = null) {
-
-		if ($module) {
-			$name = $module->getDisplayName();
-			$id = $module->getId();
-			if (isset($this->encryptionModules[$id])) {
-				return $this->encryptionModules[$id];
-			} else {
-				$message = 'Module "' . $name . '" (id: "' . $id . '") does not exists.';
-				throw new Exceptions\ModuleDoesNotExistsException($message);
-			}
-		} else { // get default module and return this
-			// For now we simply return the first module until we have a way
-			// to enable multiple modules and define a default module
-			$module = reset($this->encryptionModules);
-			if ($module) {
-				return $module;
-			} else {
-				$message = 'No encryption module registered';
-				throw new Exceptions\ModuleDoesNotExistsException($message);
-			}
+	public function getEncryptionModule($moduleId) {
+		if (isset($this->encryptionModules[$moduleId])) {
+			return $this->encryptionModules[$moduleId];
+		} else {
+			$message = "Module with id: $moduleId does not exists.";
+			throw new Exceptions\ModuleDoesNotExistsException($message);
 		}
 	}
 
