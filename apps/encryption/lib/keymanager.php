@@ -28,6 +28,7 @@ use OCA\Encryption\Crypto\Crypt;
 use OCP\Encryption\IKeyStorage;
 use OCP\IConfig;
 use OCP\IUser;
+use OCP\IUserSession;
 
 class KeyManager {
 
@@ -70,16 +71,16 @@ class KeyManager {
 	 * @param IKeyStorage $keyStorage
 	 * @param Crypt $crypt
 	 * @param IConfig $config
-	 * @param IUser $userID
+	 * @param IUserSession $userSession
 	 */
-	public function __construct(IKeyStorage $keyStorage, Crypt $crypt, IConfig $config, IUser $userID) {
+	public function __construct(IKeyStorage $keyStorage, Crypt $crypt, IConfig $config, IUserSession $userSession) {
 
 		$this->keyStorage = $keyStorage;
 		$this->crypt = $crypt;
 		$this->config = $config;
 		$this->recoveryKeyId = $this->config->getAppValue('encryption', 'recoveryKeyId');
 		$this->publicShareKeyId = $this->config->getAppValue('encryption', 'publicShareKeyId');
-		$this->keyId = $userID->getUID();
+		$this->keyId = $userSession && $userSession->isLoggedIn() ? $userSession->getUser()->getUID() : false;
 
 	}
 

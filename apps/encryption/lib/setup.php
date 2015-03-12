@@ -12,6 +12,7 @@ namespace OCA\Encryption;
 
 use OCP\ILogger;
 use OCP\IUser;
+use OCP\IUserSession;
 
 class Setup {
 	/**
@@ -27,10 +28,11 @@ class Setup {
 	 * Setup constructor.
 	 *
 	 * @param ILogger $logger
-	 * @param IUser $user
+	 * @param IUserSession $userSession
 	 */
-	public function __construct(ILogger $logger, IUser $user) {
+	public function __construct(ILogger $logger, IUserSession $userSession) {
 		$this->logger = $logger;
-		$this->user = $user;
+		$this->user = $userSession && $userSession->isLoggedIn() ? $userSession->getUser()->getUID() : false;
+
 	}
 }

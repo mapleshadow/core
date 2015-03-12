@@ -19,65 +19,15 @@
  *
  */
 
-use OC\Files\View;
 use OCA\Encryption\AppInfo\Encryption;
-use OCA\Encryption\Crypto\Crypt;
-use OCA\Encryption\HookManager;
-use OCA\Encryption\Hooks\AppHooks;
-use OCA\Encryption\Hooks\FileSystemHooks;
-use OCA\Encryption\Hooks\ShareHooks;
-use OCA\Encryption\Hooks\UserHooks;
-use OCA\Encryption\KeyManager;
-use OCA\Encryption\Recovery;
-use OCP\App;
 
-script('encryption', 'encryption');
-script('encryption', 'detect-migration');
+if (!OC::$CLI) {
+	$di = \OC::$server;
+	$app = new Encryption('encryption',
+		[],
+		$di->getEncryptionManager(),
+		$di->getConfig());
 
-
-$ioc = \OC::$server;
-$config = $ioc->getConfig();
-// Lets register this encryption module
-$encryptionModule = $ioc->getEncryptionManager()->registerEncryptionModule(new Encryption());
-
-$ioc->registerService('Crypt', function (OC\Server $c) {
-	return new Crypt($c->getLogger(), $c->getUserSession()->getUser(), $c->getConfig());
-});
-
-$ioc->registerService('KeyManager', function (OC\Server $c) {
-	return new KeyManager($c->getEncryptionKeyStorage(), $c->query('Crypt'), $c->getConfig(), $c->getUserSession());
-});
-
-
-$ioc->registerService('Recovery', function (OC\Server $c) {
-	return new Recovery(
-		$c->getUserSession()->getUser(),
-		$c->query('Crypt'),
-		$c->getSecureRandom(),
-		$c->query('KeyManager'),
-		$c->getConfig(),
-		$c->getEncryptionKeyStorage());
-});
-
-if ($config->getSystemValue('maintenance', false)) {
-
-	// Register our hooks and fire them.
-	$hookManager = new HookManager();
-
-	$hookManager->registerHook([
-		new UserHooks(),
-		new ShareHooks(),
-		new FileSystemHooks(),
-		new AppHooks()
-	]);
-
-	$hookManager->fireHooks();
-
-} else {
-	// Logout user if we are in maintenance to force re-login
-	$ioc->getUserSession()->logout();
+	$app->boot();
 }
 
-// Register settings scripts
-App::registerAdmin('encryption', 'settings/settings-admin');
-App::registerPersonal('encryption', 'settings/settings-personal');

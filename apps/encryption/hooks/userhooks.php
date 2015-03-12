@@ -30,7 +30,6 @@ use OCA\Encryption\Users\Setup;
 use OCP\App;
 use OCP\ILogger;
 use OCP\IUserSession;
-use OCP\Template;
 use OCP\Util;
 use Test\User;
 
@@ -81,12 +80,12 @@ class UserHooks implements IHook {
 	 * @return null
 	 */
 	public function addHooks() {
-		Util::connectHook('OC_User', 'post_login', 'OCA\Encryption\Hooks', 'login');
-		Util::connectHook('OC_User', 'logout', 'OCA\Encryption\Hooks', 'logout');
-		Util::connectHook('OC_User', 'post_setPassword', 'OCA\Encryption\Hooks', 'setPassphrase');
-		Util::connectHook('OC_User', 'pre_setPassword', 'OCA\Encryption\Hooks', 'preSetPassphrase');
-		Util::connectHook('OC_User', 'post_createUser', 'OCA\Encryption\Hooks', 'postCreateUser');
-		Util::connectHook('OC_User', 'post_deleteUser', 'OCA\Encryption\Hooks', 'postDeleteUser');
+		Util::connectHook('OC_User', 'post_login', $this, 'login');
+		Util::connectHook('OC_User', 'logout', $this, 'logout');
+		Util::connectHook('OC_User', 'post_setPassword', $this, 'setPassphrase');
+		Util::connectHook('OC_User', 'pre_setPassword', $this, 'preSetPassphrase');
+		Util::connectHook('OC_User', 'post_createUser', $this, 'postCreateUser');
+		Util::connectHook('OC_User', 'post_deleteUser', $this, 'postDeleteUser');
 	}
 
 

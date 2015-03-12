@@ -13,7 +13,7 @@ namespace OCA\Encryption\Users;
 use OCA\Encryption\Crypto\Crypt;
 use OCA\Encryption\KeyManager;
 use OCP\ILogger;
-use OCP\IUser;
+use OCP\IUserSession;
 
 class Setup extends \OCA\Encryption\Setup {
 	/**
@@ -28,12 +28,12 @@ class Setup extends \OCA\Encryption\Setup {
 
 	/**
 	 * @param ILogger $logger
-	 * @param IUser $user
+	 * @param IUserSession $userSession
 	 * @param Crypt $crypt
 	 * @param KeyManager $keyManager
 	 */
-	public function __construct(ILogger $logger, IUser $user, Crypt $crypt, KeyManager $keyManager) {
-		parent::__construct($logger, $user);
+	public function __construct(ILogger $logger, IUserSession $userSession, Crypt $crypt, KeyManager $keyManager) {
+		parent::__construct($logger, $userSession);
 		$this->crypt = $crypt;
 		$this->keyManager = $keyManager;
 	}

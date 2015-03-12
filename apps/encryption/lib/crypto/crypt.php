@@ -28,6 +28,7 @@ use OC\Encryption\Exceptions\GenericEncryptionException;
 use OCP\IConfig;
 use OCP\ILogger;
 use OCP\IUser;
+use OCP\IUserSession;
 
 class Crypt {
 
@@ -56,12 +57,12 @@ class Crypt {
 
 	/**
 	 * @param ILogger $logger
-	 * @param IUser $user
+	 * @param IUserSession $userSession
 	 * @param IConfig $config
 	 */
-	public function __construct(ILogger $logger, IUser $user, IConfig $config) {
+	public function __construct(ILogger $logger, IUserSession $userSession, IConfig $config) {
 		$this->logger = $logger;
-		$this->user = $user;
+		$this->user = $userSession && $userSession->isLoggedIn() ? $userSession->getUser() : false;
 		$this->config = $config;
 	}
 
@@ -82,8 +83,7 @@ class Crypt {
 		$res = $this->getOpenSSLPKey();
 
 		if (!$res) {
-			$user = $this->user->getUser();
-			$log->error("Encryption Library could'nt generate users key-pair for {$user->getUID()}", ['app' => 'encryption']);
+			$log->error("Encryption Library could'nt generate users key-pair for {$this->user->getUID()}", ['app' => 'encryption']);
 
 			if (openssl_error_string()) {
 				$log->error('Encryption library openssl_pkey_new() fails: ' . openssl_error_string(), ['app' => 'encryption']);
