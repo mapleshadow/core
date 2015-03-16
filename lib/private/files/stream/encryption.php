@@ -211,19 +211,25 @@ class Encryption extends Wrapper {
 	}
 
 	public function stream_write($data) {
+		$this->unencryptedSize += strlen($data);
 		$encrypted = $this->encryptionModule->encrypt($data);
 		return parent::stream_write($encrypted);
 	}
 
 	public function stream_close() {
-
-		$remainingData = $this->encryptionModule->end($this->fullPath);
-		if ($this->readOnly === false && $remainingData) {
-			parent::stream_write($remainingData);
-			// TODO what to do with unencrypted size?
-		}
-
+		$this->flush();
 		return parent::stream_close();
+	}
+
+	/**
+	 * tell encryption module that we are done and write remaining data to the file
+	 */
+	protected function flush() {
+		$remainingData = $this->encryptionModule->end($this->fullPath);
+		if ($this->readOnly === false && !empty($remainingData)) {
+			parent::stream_write($remainingData);
+			// TODO update file cache with unencrypted_size
+		}
 	}
 
 }
