@@ -21,13 +21,13 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace OC\Encryption;
+namespace OC\Encryption\Keys;
 
 use OC\Encryption\Util;
 use OC\Files\View;
 use OCA\Files_Encryption\Exception\EncryptionException;
 
-class KeyStorage implements \OCP\Encryption\IKeyStorage {
+class Storage implements \OCP\Encryption\Keys\IStorage {
 
 	/** @var View */
 	private $view;
@@ -36,18 +36,26 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 	private $util;
 
 	// base dir where all the file related keys are stored
-	private static $keys_base_dir = '/files_encryption/keys/';
-	private static $encryption_base_dir = '/files_encryption';
+	private $keys_base_dir;
+	private $encryption_base_dir;
 
 	private $keyCache = array();
 
+	/** @var string */
+	private $encryptionModuleId;
+
 	/**
+	 * @param string $encryptionModuleId
 	 * @param View $view
 	 * @param Util $util
 	 */
-	public function __construct(View $view, Util $util) {
+	public function __construct($encryptionModuleId, View $view, Util $util) {
 		$this->view = $view;
 		$this->util = $util;
+		$this->encryptionModuleId = $encryptionModuleId;
+
+		$this->encryption_base_dir = '/files_encryption';
+		$this->keys_base_dir = $this->encryption_base_dir .'/keys';
 	}
 
 	/**
@@ -59,7 +67,8 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 	 * @return mixed key
 	 */
 	public function getUserKey($uid, $keyId) {
-		$path = '/' . $uid . self::$encryption_base_dir . '/' . $uid . '.' . $keyId;
+		$path = '/' . $uid . $this->encryption_base_dir . '/'
+			. $this->encryptionModuleId . '/' . $uid . '.' . $keyId;
 		return $this->getKey($path);
 	}
 
@@ -85,7 +94,7 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 	 * @return mixed key
 	 */
 	public function getSystemUserKey($keyId) {
-		$path = '/' . self::$encryption_base_dir . '/' . $keyId;
+		$path = $this->encryption_base_dir . '/' . $this->encryptionModuleId . '/' . $keyId;
 		return $this->getKey($path);
 	}
 
@@ -97,7 +106,8 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 	 * @param mixed $key
 	 */
 	public function setUserKey($uid, $keyId, $key) {
-		$path = '/' . $uid . self::$encryption_base_dir . '/' . $uid . '.' . $keyId;
+		$path = '/' . $uid . $this->encryption_base_dir . '/'
+			. $this->encryptionModuleId . '/' . $uid . '.' . $keyId;
 		return $this->setKey($path, $key);
 	}
 
@@ -123,7 +133,8 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 	 * @return mixed key
 	 */
 	public function setSystemUserKey($keyId, $key) {
-		$path = '/' . self::$encryption_base_dir . '/' . $keyId;
+		$path = $this->encryption_base_dir . '/'
+			. $this->encryptionModuleId . '/' . $keyId;
 		return $this->setKey($path, $key);
 	}
 
@@ -138,18 +149,13 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 
 		$key = '';
 
-		if (isset($this->keyCache[$path])) {
-			$key =  $this->keyCache[$path];
-		} else {
-
-			/** @var \OCP\Files\Storage $storage */
-			list($storage, $internalPath) = $this->view->resolvePath($path);
-
-			if ($storage->file_exists($internalPath)) {
-				$key = $storage->file_get_contents($internalPath);
+		if ($this->view->file_exists($path)) {
+			if (isset($this->keyCache[$path])) {
+				$key =  $this->keyCache[$path];
+			} else {
+				$key = $this->view->file_get_contents($path);
 				$this->keyCache[$path] = $key;
 			}
-
 		}
 
 		return $key;
@@ -166,9 +172,7 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 	private function setKey($path, $key) {
 		$this->keySetPreparation(dirname($path));
 
-		/** @var \OCP\Files\Storage $storage */
-		list($storage, $internalPath) = \OC\Files\Filesystem::resolvePath($path);
-		$result = $storage->file_put_contents($internalPath, $key);
+		$result = $this->view->file_put_contents($path, $key);
 
 		if (is_int($result) && $result > 0) {
 			$this->keyCache[$path] = $key;
@@ -181,32 +185,28 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 	/**
 	 * get path to key folder for a given file
 	 *
-	 * @param string $path path to the file, relative to the users file directory
+	 * @param string $path path to the file, relative to data/
 	 * @return string
 	 * @throws EncryptionException
 	 * @internal param string $keyId
 	 */
 	private function getFileKeyDir($path) {
 
-		//
-		// TODO: NO DEPRICATED API !!!
-		//
-		if ($this->view->is_dir('/' . \OCP\User::getUser() . '/' . $path)) {
+		if ($this->view->is_dir($path)) {
 			throw new EncryptionException('file was expected but directory was given', EncryptionException::GENERIC);
 		}
 
 		list($owner, $filename) = $this->util->getUidAndFilename($path);
 		$filename = $this->util->stripPartialFileExtension($filename);
-		$filePath_f = ltrim($filename, '/');
 
 		// in case of system wide mount points the keys are stored directly in the data directory
 		if ($this->util->isSystemWideMountPoint($filename)) {
-			$keyPath = self::$keys_base_dir . $filePath_f . '/';
+			$keyPath = $this->keys_base_dir . $filename . '/';
 		} else {
-			$keyPath = '/' . $owner . self::$keys_base_dir . $filePath_f . '/';
+			$keyPath = '/' . $owner . $this->keys_base_dir . $filename . '/';
 		}
 
-		return $keyPath;
+		return \OC\Files\Filesystem::normalizePath($keyPath . $this->encryptionModuleId . '/', false);
 	}
 
 	/**
@@ -226,25 +226,6 @@ class KeyStorage implements \OCP\Encryption\IKeyStorage {
 				}
 			}
 		}
-	}
-
-	/**
-	 * Check if encryption system is ready to begin encrypting
-	 * all the things
-	 *
-	 * @return bool
-	 */
-	public function ready() {
-		$paths = [
-			self::$encryption_base_dir,
-			self::$keys_base_dir
-		];
-		foreach ($paths as $path) {
-			if (!$this->view->file_exists($path)) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 }

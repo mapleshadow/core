@@ -49,13 +49,25 @@ class Util {
 	 */
 	protected $blockSize = 8192;
 
-	/** $var array */
+	/** @var \OC\Files\View */
+	protected $view;
+
+	/** @var array */
 	protected $ocHeaderKeys;
 
-	public function __construct() {
+	/** @var \OC\User\Manager */
+	protected $userManager;
+
+	/**
+	 * @param \OC\Files\View $view root view
+	 */
+	public function __construct(\OC\Files\View $view, \OC\User\Manager $userManager) {
 		$this->ocHeaderKeys = [
 			self::HEADER_ENCRYPTION_MODULE => self::HEADER_ENCRYPTION_MODULE_KEY
 		];
+
+		$this->view = $view;
+		$this->userManager = $userManager;
 	}
 
 	/**
@@ -186,8 +198,62 @@ class Util {
 		return $this->blockSize;
 	}
 
-	public function getUidAndFilename($filename) {
-		// TODO find a better implementation than in the current encyption app
+	public function getUidAndFilename($path) {
+
+		$parts = explode('/', $path);
+		if (count($parts) > 2) {
+			$uid = $parts[1];
+			if (!$this->userManager->userExists($uid)) {
+				throw new \BadMethodCallException('path needs to be relative to the system wide data folder and point to a user specific file');
+			}
+		}
+
+		$pathinfo = pathinfo($path);
+		$partfile = false;
+		$parentFolder = false;
+		if (array_key_exists('extension', $pathinfo) && $pathinfo['extension'] === 'part') {
+			// if the real file exists we check this file
+			$filePath = $pathinfo['dirname'] . '/' . $pathinfo['filename'];
+			if ($this->view->file_exists($filePath)) {
+				$pathToCheck = $pathinfo['dirname'] . '/' . $pathinfo['filename'];
+			} else { // otherwise we look for the parent
+				$pathToCheck = $pathinfo['dirname'];
+				$parentFolder = true;
+			}
+			$partfile = true;
+		} else {
+			$pathToCheck = $path;
+		}
+
+		$pathToCheck = substr($pathToCheck, strlen('/' . $uid));
+
+		$this->view->chroot('/' . $uid);
+		$owner = $this->view->getOwner($pathToCheck);
+
+		// Check that UID is valid
+		if (!\OCP\User::userExists($owner)) {
+				throw new \BadMethodCallException('path needs to be relative to the system wide data folder and point to a user specific file');
+		}
+
+		\OC\Files\Filesystem::initMountPoints($owner);
+
+		$info = $this->view->getFileInfo($pathToCheck);
+		$this->view->chroot('/' . $owner);
+		$ownerPath = $this->view->getPath($info->getId());
+		$this->view->chroot('/');
+
+		if ($parentFolder) {
+			$ownerPath = $ownerPath . '/'. $pathinfo['filename'];
+		}
+
+		if ($partfile) {
+			$ownerPath = $ownerPath . '.' . $pathinfo['extension'];
+		}
+
+		return array(
+			$owner,
+			\OC\Files\Filesystem::normalizePath($ownerPath)
+		);
 	}
 
 	/**

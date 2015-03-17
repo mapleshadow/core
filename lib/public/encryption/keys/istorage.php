@@ -21,9 +21,9 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace OCP\Encryption;
+namespace OCP\Encryption\Keys;
 
-interface IKeyStorage {
+interface IStorage {
 
 	/**
 	 * get user specific key
@@ -84,10 +84,4 @@ interface IKeyStorage {
 	 */
 	public function setSystemUserKey($keyId, $key);
 
-	/**
-	 * Return if encryption is setup and ready encrypt things
-	 *
-	 * @return bool
-	 */
-	public function ready();
 }
