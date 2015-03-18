@@ -93,9 +93,13 @@ class Test_DBSchema extends \Test\TestCase {
 		$content = str_replace('*dbprefix*', $randomPrefix, $content);
 		file_put_contents($schema_file, $content);
 
+		$this->assertTableNotExist($randomPrefix . 'filecache');
 		\OC_DB::createDbFromStructure($schema_file);
+		$this->assertTableExist($randomPrefix . 'filecache');
 		\OC_DB::updateDbFromStructure($schema_file);
+		$this->assertTableExist($randomPrefix . 'filecache');
 		\OC_DB::removeDBStructure($schema_file);
+		$this->assertTableNotExist($randomPrefix . 'filecache');
 
 		unlink($schema_file);
 		$this->assertTrue(true, 'Asserting that no error occurred when updating with the same schema that is already installed');
