@@ -85,14 +85,15 @@ class Test_DBSchema extends \Test\TestCase {
 		$dbfile = OC::$SERVERROOT.'/db_structure.xml';
 		$schema_file = 'static://live_db_scheme';
 
-		$randomPrefix = $this->getUniqueID('oc_', 4) . '_';
+		$randomPrefix = $this->getUniqueID('', 4) . '_';
 		$content = file_get_contents($dbfile);
 		// Add prefix to index names to make them unique
 		$content = str_replace('<name>', '<name>*dbprefix*', $content);
 		$content = str_replace('*dbprefix**dbprefix*', '*dbprefix*', $content);
-		$content = str_replace('*dbprefix*', $randomPrefix, $content);
+		$content = str_replace('*dbprefix*', 'oc_' . $randomPrefix, $content);
 		file_put_contents($schema_file, $content);
 
+		// The method OC_DB::tableExists() adds the prefix itself
 		$this->assertTableNotExist($randomPrefix . 'filecache');
 		\OC_DB::createDbFromStructure($schema_file);
 		$this->assertTableExist($randomPrefix . 'filecache');
