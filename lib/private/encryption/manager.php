@@ -62,14 +62,13 @@ class Manager implements \OCP\Encryption\IManager {
 	 * @throws Exceptions\ModuleAlreadyExistsException
 	 */
 	public function registerEncryptionModule(IEncryptionModule $module) {
-
-		if (!empty($this->encryptionModules)) {
-			$message = 'At the moment it is not allowed to register more than one encryption module';
+		$id = $module->getId();
+		$name = $module->getDisplayName();
+		if (isset($this->encryptionModules[$id])) {
+			$message = 'Id "' . $id . '" already used by encryption module "' . $name . '"';
 			throw new Exceptions\ModuleAlreadyExistsException($message);
 		}
 
-		$id = $module->getId();
-		$name = $module->getDisplayName();
 		$this->encryptionModules[$id] = $module;
 	}
 
@@ -98,12 +97,24 @@ class Manager implements \OCP\Encryption\IManager {
 	 * @return IEncryptionModule
 	 * @throws Exceptions\ModuleDoesNotExistsException
 	 */
-	public function getEncryptionModule($moduleId) {
-		if (isset($this->encryptionModules[$moduleId])) {
-			return $this->encryptionModules[$moduleId];
-		} else {
-			$message = "Module with id: $moduleId does not exists.";
-			throw new Exceptions\ModuleDoesNotExistsException($message);
+	public function getEncryptionModule($moduleId = '') {
+		if (!empty($moduleId)) {
+			if (isset($this->encryptionModules[$moduleId])) {
+				return $this->encryptionModules[$moduleId];
+			} else {
+				$message = "Module with id: $moduleId does not exists.";
+				throw new Exceptions\ModuleDoesNotExistsException($message);
+			}
+		} else { // get default module and return this
+				 // For now we simply return the first module until we have a way
+	             // to enable multiple modules and define a default module
+			$module = reset($this->encryptionModules);
+			if ($module) {
+				return $module;
+			} else {
+				$message = 'No encryption module registered';
+				throw new Exceptions\ModuleDoesNotExistsException($message);
+			}
 		}
 	}
 

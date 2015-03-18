@@ -163,6 +163,7 @@ class Encryption extends Wrapper {
 	public function fopen($path, $mode) {
 
 		$shouldEncrypt = false;
+		$encryptionModule = null;
 		$header = $this->getHeader($path);
 		$fullPath = $this->getFullPath($path);
 		$encryptionModuleId = $this->util->getEncryptionModuleId($header);
@@ -177,7 +178,7 @@ class Encryption extends Wrapper {
 			$shouldEncrypt = $encryptionModule->shouldEncrypt($fullPath);
 		} else {
 			// only get encryption module if we found one in the header
-			if ($encryptionModuleId !== null) {
+			if (!empty($encryptionModuleId)) {
 				$encryptionModule = $this->encryptionManager->getEncryptionModule($encryptionModuleId);
 				$shouldEncrypt = true;
 			}

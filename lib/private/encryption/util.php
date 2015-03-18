@@ -74,16 +74,17 @@ class Util {
 	 * read encryption module ID from header
 	 *
 	 * @param array $header
-	 * @return string|null
+	 * @return string
 	 */
 	public function getEncryptionModuleId(array $header) {
+		$id = '';
 		$encryptionModuleKey = self::HEADER_ENCRYPTION_MODULE_KEY;
 
 		if (isset($header[$encryptionModuleKey])) {
-			return $header[$encryptionModuleKey];
+			$id = $header[$encryptionModuleKey];
 		}
 
-		return null;
+		return $id;
 	}
 
 	/**

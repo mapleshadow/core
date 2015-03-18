@@ -2,7 +2,6 @@
 
 namespace Test\Encryption;
 
-use OC\Encryption\KeyStorage;
 use OC\Encryption\Manager;
 use Test\TestCase;
 
@@ -45,7 +44,7 @@ class ManagerTest extends TestCase {
 
 	/**
 	 * @expectedException \OC\Encryption\Exceptions\ModuleAlreadyExistsException
-	 * @expectedExceptionMessage At the moment it is not allowed to register more than one encryption module
+	 * @expectedExceptionMessage Id "0" already used by encryption module "TestDummyModule0"
 	 */
 	public function testModuleRegistration() {
 		$config = $this->getMock('\OCP\IConfig');
