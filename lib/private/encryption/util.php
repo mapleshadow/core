@@ -23,12 +23,12 @@
 
 namespace OC\Encryption;
 
-use OCA\Files_Encryption\Exception\EncryptionException;
+use OC\Encryption\Exceptions\EncryptionHeaderToLargeException;
+use OC\Encryption\Exceptions\EncryptionHeaderKeyExistsException;
 use OCP\Encryption\IEncryptionModule;
 
 class Util {
 
-	const HEADER_ENCRYPTION_MODULE = 1;
 	const HEADER_START = 'HBEGIN';
 	const HEADER_END = 'HEND';
 	const HEADER_PADDING_CHAR = '-';
@@ -63,7 +63,7 @@ class Util {
 	 */
 	public function __construct(\OC\Files\View $view, \OC\User\Manager $userManager) {
 		$this->ocHeaderKeys = [
-			self::HEADER_ENCRYPTION_MODULE => self::HEADER_ENCRYPTION_MODULE_KEY
+			self::HEADER_ENCRYPTION_MODULE_KEY
 		];
 
 		$this->view = $view;
@@ -122,20 +122,21 @@ class Util {
 	 * @param array $headerData
 	 * @param IEncryptionModule $encryptionModule
 	 * @return string
-	 * @throws EncryptionException
+	 * @throws EncryptionHeaderToLargeException if header has to many arguments
+	 * @throws EncryptionHeaderKeyExistsException if header key is already in use
 	 */
 	public function createHeader(array $headerData, IEncryptionModule $encryptionModule) {
-		$header = self::HEADER_START . ':' . self::HEADER_ENCRYPTION_MODULE . ':' . $encryptionModule->getId() . ':';
+		$header = self::HEADER_START . ':' . self::HEADER_ENCRYPTION_MODULE_KEY . ':' . $encryptionModule->getId() . ':';
 		foreach ($headerData as $key => $value) {
 			if (in_array($key, $this->ocHeaderKeys)) {
-				throw new EncryptionException('header key "'. $key . '" already reserved by ownCloud');
+				throw new EncryptionHeaderKeyExistsException('header key "'. $key . '" already reserved by ownCloud');
 			}
 			$header .= $key . ':' . $value . ':';
 		}
 		$header .= self::HEADER_END;
 
 		if (strlen($header) > $this->getHeaderSize()) {
-			throw new EncryptionException('max header size exceeded', EncryptionException::ENCRYPTION_HEADER_TO_LARGE);
+			throw new EncryptionHeaderToLargeException('max header size exceeded', EncryptionException::ENCRYPTION_HEADER_TO_LARGE);
 		}
 
 		$paddedHeader = str_pad($header, $this->headerSize, self::HEADER_PADDING_CHAR, STR_PAD_RIGHT);
@@ -232,7 +233,7 @@ class Util {
 		$owner = $this->view->getOwner($pathToCheck);
 
 		// Check that UID is valid
-		if (!\OCP\User::userExists($owner)) {
+		if (!$this->userManager->userExists($owner)) {
 				throw new \BadMethodCallException('path needs to be relative to the system wide data folder and point to a user specific file');
 		}
 
