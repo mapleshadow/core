@@ -80,24 +80,25 @@ class Test_DBSchema extends \Test\TestCase {
 		$this->assertTableNotExist($this->table1);
 		$this->assertTableNotExist($this->table2);
 	}
-	
-	/**
-	 * 
-	 */
+
 	public function testSchemaUnchanged() {
 		$dbfile = OC::$SERVERROOT.'/db_structure.xml';
 		$schema_file = 'static://live_db_scheme';
-		
-		//$r = '_'.OC_Util::generate_random_bytes('4').'_';
-		$content = file_get_contents( $dbfile );
-		//$content = str_replace( '*dbprefix*', '*dbprefix*'.$r, $content );
-		file_put_contents( $schema_file, $content );
 
-		//\OC_DB::enableCaching(false);
+		$randomPrefix = $this->getUniqueID('oc_', 4) . '_';
+		$content = file_get_contents($dbfile);
+		// Add prefix to index names to make them unique
+		$content = str_replace('<name>', '<name>*dbprefix*', $content);
+		$content = str_replace('*dbprefix**dbprefix*', '*dbprefix*', $content);
+		$content = str_replace('*dbprefix*', $randomPrefix, $content);
+		file_put_contents($schema_file, $content);
+
 		\OC_DB::createDbFromStructure($schema_file);
 		\OC_DB::updateDbFromStructure($schema_file);
-		
+		\OC_DB::removeDBStructure($schema_file);
+
 		unlink($schema_file);
+		$this->assertTrue(true, 'Asserting that no error occurred when updating with the same schema that is already installed');
 	}
 
 	/**
