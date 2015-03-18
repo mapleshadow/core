@@ -664,7 +664,7 @@ class OC {
 			\OC\Files\Filesystem::addStorageWrapper('oc_encryption', function ($mountPoint, $storage) {
 				$parameters = array('storage' => $storage, 'mountPoint' => $mountPoint);
 				$manager = \OC::$server->getEncryptionManager();
-				$util = new \OC\Encryption\Util();
+				$util = new \OC\Encryption\Util(new \OC\Files\View(), \OC::$server->getUserManager());
 				$user = \OC::$server->getUserSession()->getUser();
 				$uid = $user ? $user->getUID() : null;
 				return new \OC\Files\Storage\Wrapper\Encryption($parameters, $manager,$util, $uid);
