@@ -154,11 +154,11 @@ EOF
 	mkdir "coverage-html-$1"
 	php -f enable_all.php | grep -i -C9999 error && echo "Error during setup" && exit 101
 	if [ -z "$NOCOVERAGE" ]; then
-		"$PHPUNIT" --configuration phpunit-autotest.xml --log-junit "autotest-results-$1.xml" --coverage-clover "autotest-clover-$1.xml" --coverage-html "coverage-html-$1" "$2" "$3"
+		"$PHPUNIT" --debug --verbose --configuration phpunit-autotest.xml --log-junit "autotest-results-$1.xml" --coverage-clover "autotest-clover-$1.xml" --coverage-html "coverage-html-$1" "$2" "$3"
 		RESULT=$?
 	else
 		echo "No coverage"
-		"$PHPUNIT" --configuration phpunit-autotest.xml --log-junit "autotest-results-$1.xml" "$2" "$3"
+		"$PHPUNIT" --debug --verbose --configuration phpunit-autotest.xml --log-junit "autotest-results-$1.xml" "$2" "$3"
 		RESULT=$?
 	fi
 }
