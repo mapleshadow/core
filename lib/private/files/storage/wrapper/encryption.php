@@ -23,6 +23,8 @@
 
 namespace OC\Files\Storage\Wrapper;
 
+use OC\Encryption\Exceptions\ModuleDoesNotExistsException;
+
 class Encryption extends Wrapper {
 
 	/** @var string */
@@ -31,21 +33,32 @@ class Encryption extends Wrapper {
 	/** @var \OC\Encryption\Util */
 	private $util;
 
-	/** @var \OCP\Encryption\IManager */
+	/** @var \OC\Encryption\Manager */
 	private $encryptionManager;
+
+	/** @var \OC\Log */
+	private $logger;
 
 	/** @var string */
 	private $uid;
 
 	/**
 	 * @param array $parameters
-	 * @param \OCP\Encryption\IManager $encryptionManager
+	 * @param \OC\Encryption\Manager $encryptionManager
 	 * @param string $uid user who perform the read/write operation (null for public access)
 	 */
-	public function __construct($parameters, \OCP\Encryption\IManager $encryptionManager = null, \OC\Encryption\Util $util = null, $uid = null) {
+	public function __construct(
+			$parameters,
+			\OC\Encryption\Manager $encryptionManager = null,
+			\OC\Encryption\Util $util = null,
+			\OC\Log $logger = null,
+			$uid = null
+		) {
+
 		$this->mountPoint = $parameters['mountPoint'];
 		$this->encryptionManager = $encryptionManager;
 		$this->util = $util;
+		$this->logger = $logger;
 		$this->uid = $uid;
 		parent::__construct($parameters);
 	}
@@ -168,6 +181,8 @@ class Encryption extends Wrapper {
 		$fullPath = $this->getFullPath($path);
 		$encryptionModuleId = $this->util->getEncryptionModuleId($header);
 
+		try {
+
 		if (
 			$mode === 'w'
 			|| $mode === 'w+'
@@ -182,6 +197,10 @@ class Encryption extends Wrapper {
 				$encryptionModule = $this->encryptionManager->getEncryptionModule($encryptionModuleId);
 				$shouldEncrypt = true;
 			}
+		}
+
+		} catch (ModuleDoesNotExistsException $e) {
+			$this->logger->warning('Encryption module "' . $encryptionModuleId . '" not found, file will be stored unencrypted');
 		}
 
 		if($shouldEncrypt === true && $encryptionModule !== null) {
@@ -227,9 +246,18 @@ class Encryption extends Wrapper {
 	 * @return \OCP\Encryption\IEncryptionModule|null
 	 */
 	protected function getEncryptionModule($path) {
+		$encryptionModule = null;
 		$header = $this->getHeader($path);
 		$encryptionModuleId = $this->util->getEncryptionModuleId($header);
-		return $this->encryptionManager->getEncryptionModule($encryptionModuleId);
+		if (!empty($encryptionModuleId)) {
+			try {
+				$encryptionModule = $this->encryptionManager->getEncryptionModule($encryptionModuleId);
+			} catch (ModuleDoesNotExistsException $e) {
+				$this->logger->critical('Encryption module defined in "' . $path . '" mot loaded!');
+				throw $e;
+			}
+		}
+		return $encryptionModule;
 	}
 
 }

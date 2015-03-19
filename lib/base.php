@@ -666,8 +666,9 @@ class OC {
 				$manager = \OC::$server->getEncryptionManager();
 				$util = new \OC\Encryption\Util(new \OC\Files\View(), \OC::$server->getUserManager());
 				$user = \OC::$server->getUserSession()->getUser();
+				$logger = \OC::$server->getLogger();
 				$uid = $user ? $user->getUID() : null;
-				return new \OC\Files\Storage\Wrapper\Encryption($parameters, $manager,$util, $uid);
+				return new \OC\Files\Storage\Wrapper\Encryption($parameters, $manager,$util, $logger, $uid);
 			});
 		}
 

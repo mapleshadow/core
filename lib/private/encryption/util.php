@@ -155,10 +155,15 @@ class Util {
 		// Make sure that a share key is generated for the owner too
 		list($owner, $ownerPath) = $this->getUidAndFilename($path);
 
-		$ownerPath = $this->stripPartialFileExtension($ownerPath);
-
 		// always add owner to the list of users with access to the file
 		$userIds = array($owner);
+
+		if (!$this->isFile($ownerPath)) {
+			return array('users' => $userIds, 'public' => false);
+		}
+
+		$ownerPath = substr($ownerPath, strlen('/files'));
+		$ownerPath = $this->stripPartialFileExtension($ownerPath);
 
 		// Find out who, if anyone, is sharing the file
 		$result = \OCP\Share::getUsersSharingFile($ownerPath, $owner);
@@ -180,6 +185,20 @@ class Util {
 		$uniqueUserIds = array_unique($userIds);
 
 		return array('users' => $uniqueUserIds, 'public' => $public);
+	}
+
+	/**
+	 * check if it is a file uploaded by the user stored in data/user/files
+	 * or a metadata file
+	 *
+	 * @param string $path
+	 * @return boolean
+	 */
+	protected function isFile($path) {
+		if (substr($path, 0, strlen('/files/')) === '/files/') {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -210,11 +229,12 @@ class Util {
 	public function getUidAndFilename($path) {
 
 		$parts = explode('/', $path);
+		$uid = '';
 		if (count($parts) > 2) {
 			$uid = $parts[1];
-			if (!$this->userManager->userExists($uid)) {
-				throw new \BadMethodCallException('path needs to be relative to the system wide data folder and point to a user specific file');
-			}
+		}
+		if (!$this->userManager->userExists($uid)) {
+			throw new \BadMethodCallException('path needs to be relative to the system wide data folder and point to a user specific file');
 		}
 
 		$pathinfo = pathinfo($path);

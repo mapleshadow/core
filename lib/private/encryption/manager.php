@@ -42,14 +42,13 @@ class Manager implements \OCP\Encryption\IManager {
 	}
 
 	/**
-	 * Check if encryption is available (at least one encryption module needs to be enabled)
+	 * Check if encryption is enabled
 	 *
 	 * @return bool true if enabled, false if not
 	 */
 	public function isEnabled() {
-		$enabled = $this->config->getSystemValue('encryption_enabled', false);
-		$modules = $this->getEncryptionModules();
-		if ($enabled && !empty($modules)) {
+		$enabled = $this->config->getSystemValue('encryption_enabled', true);
+		if ($enabled) {
 			return true;
 		}
 		return false;
