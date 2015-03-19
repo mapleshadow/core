@@ -45,6 +45,8 @@ class Encryption extends Wrapper {
 	/**
 	 * @param array $parameters
 	 * @param \OC\Encryption\Manager $encryptionManager
+	 * @param \OC\Encryption\Util $util
+	 * @param \OC\Log $logger
 	 * @param string $uid user who perform the read/write operation (null for public access)
 	 */
 	public function __construct(

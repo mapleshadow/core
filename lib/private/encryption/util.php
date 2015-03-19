@@ -188,6 +188,37 @@ class Util {
 	}
 
 	/**
+	 * go recursively through a dir and collect all files and sub files.
+	 *
+	 * @param string $dir relative to the users files folder
+	 * @param strinf $mountPoint
+	 * @return array with list of files relative to the users files folder
+	 */
+	public function getAllFiles($dir, $mountPoint = '') {
+		$result = array();
+		$dirList = array($dir);
+
+		while ($dirList) {
+			$dir = array_pop($dirList);
+			$content = $this->view->getDirectoryContent($dir);
+
+			foreach ($content as $c) {
+				// getDirectoryContent() returns the paths relative to the mount points, so we need
+				// to re-construct the complete path
+				$path = ($mountPoint !== '') ? $mountPoint . '/' .  $c['path'] : $c['path'];
+				if ($c['type'] === 'dir') {
+					$dirList[] = $path;
+				} else {
+					$result[] = $path;
+				}
+			}
+
+		}
+
+		return $result;
+	}
+
+	/**
 	 * check if it is a file uploaded by the user stored in data/user/files
 	 * or a metadata file
 	 *

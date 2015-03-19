@@ -602,6 +602,7 @@ class OC {
 		self::registerLogRotate();
 		self::registerLocalAddressBook();
 		self::registerEncryptionWrapper();
+		self::registerEncryptionHooks();
 
 		//make sure temporary files are cleaned up
 		$tmpManager = \OC::$server->getTempManager();
@@ -672,6 +673,23 @@ class OC {
 			});
 		}
 
+	}
+
+	private static function registerEncryptionHooks() {
+		$enabled = self::$server->getEncryptionManager()->isEnabled();
+		if ($enabled) {
+			$updater = new \OC\Encryption\Update(
+				new \OC\Files\View(),
+				new \OC\Encryption\Util(new \OC\Files\View(), \OC::$server->getUserManager()),
+				\OC\Files\Filesystem::getMountManager(),
+				\OC::$server->getUserSession()->getUser()->getUID()
+			);
+			\OCP\Util::connectHook('OCP\Share', 'post_shared', $updater, 'postShared');
+			\OCP\Util::connectHook('OCP\Share', 'post_unshare', $updater, 'postUnshared');
+
+			//\OCP\Util::connectHook('OC_Filesystem', 'post_umount', 'OCA\Files_Encryption\Hooks', 'postUnmount');
+			//\OCP\Util::connectHook('OC_Filesystem', 'umount', 'OCA\Files_Encryption\Hooks', 'preUnmount');
+		}
 	}
 
 	/**
