@@ -200,6 +200,13 @@ class Util {
 		return $this->blockSize;
 	}
 
+	/**
+	 * get the owner and the path for the owner
+	 *
+	 * @param string $path
+	 * @return array
+	 * @throws \BadMethodCallException
+	 */
 	public function getUidAndFilename($path) {
 
 		$parts = explode('/', $path);
